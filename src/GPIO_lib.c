@@ -34,7 +34,7 @@ void delay_us(int microseconds){
  *
  * @param  milliseconds: number of milliseconds to wait
  * @retval None
- */
+ */s
 void delay_ms(int milliseconds)
 {
 	if(milliseconds < TIM2->ARR){
@@ -142,48 +142,4 @@ void send_string(const char *s){
 	}
 }
 
-
-/*********************SPI FUNCTIONS************************/
-void GPIO_Set_Bits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
-{
-  GPIOx->BSRRL = GPIO_Pin;
-}
-
-void GPIO_Reset_Bits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
-{
-
-  GPIOx->BSRRH = GPIO_Pin;
-}
-
-uint8_t SPI_SendReceiveData(uint8_t data){
-	while(!(SPI2 -> SR & SPI_SR_TXE));
-	SPI2 -> DR = data;
-
-	while(!(SPI2 -> SR & SPI_SR_RXNE));
-	return SPI2 -> DR;
-}
-
-void LCD_Cmd(uint8_t cmd)
-{
- GPIO_Reset_Bits(GPIOC, LCD_CE|LCD_DC);
- SPI_SendReceiveData(cmd);
- GPIO_Set_Bits(GPIOC, LCD_CE);
-}
-
-
-void LCD_SendData(const uint8_t* data, int size)
-{
- int i;
- GPIO_Set_Bits(GPIOC, LCD_DC);
- GPIO_Reset_Bits(GPIOC, LCD_CE);
- for (i = 0; i < size; i++)
- SPI_SendReceiveData(data[i]);
- GPIO_Set_Bits(GPIOC, LCD_CE);
-}
-
-void LCD_Reset()
-{
- GPIO_Reset_Bits(GPIOC, LCD_RST);
- GPIO_Set_Bits(GPIOC, LCD_RST);
-}
 
