@@ -8,5 +8,4 @@ void NVIC_init(void);
 void ADC_init(void);
 void USART_init(void);
 void DMA_init(void);
-void SPI_init(void);
 

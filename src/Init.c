@@ -633,33 +633,3 @@ void DMA_init(void){
 
 }
 
-
-void SPI_init(void){
-	GPIOB -> MODER |= 0b10 << 26;		// GPIOB_Pin_13 used as alternative function
-	GPIOB -> OSPEEDR |= 0b11 << 26;		// GPIOB_Pin_13 HIGH SPEED output
-	GPIOB -> OTYPER |= 0b0 << 13;		// GPIOB_Pin_13 is Push-Pull output
-	GPIOB -> AFR[1]  |= 0b0101 << 20;	// GPIOB_Pin_13 alternative function TIM4
-
-
-	GPIOB -> MODER |= (0b10 << 28);		// GPIOB_Pin_14 used as alternative function
-	GPIOB -> OSPEEDR |= (0b11 << 28);	// GPIOB_Pin_14 HIGH SPEED output
-	GPIOB -> OTYPER |= (0b0 << 14);		// GPIOB_Pin_14 is Push-Pull output
-	GPIOB -> AFR[1]  |= (0b0101 << 24);	// GPIOB_Pin_14 alternative function TIM4
-
-
-	GPIOB -> MODER |= (0b10 << 30);		// GPIOB_Pin_15 used as alternative function
-	GPIOB -> OSPEEDR |= (0b11 << 30);	// GPIOB_Pin_15 HIGH SPEED output
-	GPIOB -> OTYPER |= (0b0 << 15);		// GPIOB_Pin_15 is Push-Pull output
-	GPIOB -> AFR[1]  |= (0b0101 << 28);	// GPIOB_Pin_15 alternative function TIM4
-
-
-	SPI2 -> CR1 |= SPI_CR1_BR_2;		// Clock division = 32
-	SPI2 -> CR1 &= ~SPI_CR1_DFF;		// 8-bit data format
-	SPI2 -> CR1 |= SPI_CR1_MSTR;		// Master mode enabled
-
-	SPI2 -> CR1 |= SPI_CR1_SPE;			// SPI Enable
-
-
-
-}
-
