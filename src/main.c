@@ -44,6 +44,7 @@ float32_t Iu;		// U phase current
 char str1[10];		// Strings used in sprintf function
 char str [10];
 
+void Display_Current_Data(void);
 
 /******************** MAIN *********************/
 int main(void)
@@ -178,57 +179,11 @@ int main(void)
 
 			Display_Manual();
 
-			// SEND DATA VIA UART EACH 0.5s
-			if(Send_Data > 1000){
-
-				// PRINT USER DATA INPUT
-				sprintf(str, "%d", Set_Rotation_Time);
-				Commutate(Commutation);
-				send_string("Set rotation time: "); send_string(str); send_string("us\n\r");
-				Set_RPM = 60000.0/((float)Set_Rotation_Time/1000.0);
-				sprintf(str, "%d", (int)Set_RPM);
-				send_string("Set RPM: "); send_string(str); send_string("\n\r");
-				send_string("\n\r");
+			Display_Current_Data();
 
 
-				// PRINT MEASURED DATA
-				W = 2000000.0*Pi/(float)Rotation_Time;		// Calculate angular velocity
-				sprintf(str, "%d", (int)(W));
-				send_string("W: "); send_string(str); send_string("rad/s\n\r");	// Print angular velocity
-				RPM = 60.0*1000000.0/(float)Rotation_Time;	// Calculate RPM
-				sprintf(str, "%d", (int)RPM);
-				send_string("RPM: "); send_string(str); send_string("\n\r");	// Print RPM
-				sprintf(str, "%d", Rotation_Time);
-				send_string("Rotation Time: ");
-				send_string(str); send_string("us\n\r");	// Print Rotation Time
-				send_string("\n\r");
-				sprintf(str, "%d", (int)TIM4->CCR1);		// Print actual duty cycle
-				send_string("PWM: "); send_string(str); send_string("/200 \n\r");
-				if(PI_ON){
-					send_string("PI regulator ON\n\r");
-				}else {
-					send_string("PI regulator OFF\n\r");
-				}
-				sprintf(str, "%d", (int)PI_Out);			// Print PI regulator output duty
-				send_string("PI regulator output: ");
-				send_string(str); send_string("/200 \n\r");
-
-
-				// PRINT MEASURED CURRENTS
-				send_string("-----CURRENTS-----\n\r");
-				sprintf(str, "%d", (int)((float)Iw*1000.0));
-				send_string("W_Current: ");
-				send_string(str); send_string("mA\n\r");
-				sprintf(str, "%d", (int)((float)Iv*1000.0));
-				send_string("V_Current: ");
-				send_string(str); send_string("mA\n\r");
-				sprintf(str, "%d", (int)((float)Iu*1000.0));
-				send_string("U_Current: ");
-				send_string(str); send_string("mA\n\r");
-				send_string("########################################\n\r");
-				Send_Data = 0;
-			}
 		}
+
 		if(Mode == FAIL){
 			Switch_Off_Output_Stage();
 			Change_Duty_Cycle(0);
@@ -290,6 +245,67 @@ int main(void)
 			delay_ms(500);
 		}
 
+	}
+}
+
+/*========================================================
+ * 			 	  Display_Current_Data(void)
+ *========================================================
+ * Function sends via UART actual values of parameteres
+ * like speed, phase currents, PI regulator output etc.
+ *
+ * @param  None
+ * @retval None
+ */
+void Display_Current_Data(void){
+	// SEND DATA VIA UART EACH 0.5s
+	if(Send_Data > 1000){
+
+		// PRINT USER DATA INPUT
+		sprintf(str, "%d", Set_Rotation_Time);
+		Commutate(Commutation);
+		send_string("Set rotation time: "); send_string(str); send_string("us\n\r");
+		Set_RPM = 60000.0/((float)Set_Rotation_Time/1000.0);
+		sprintf(str, "%d", (int)Set_RPM);
+		send_string("Set RPM: "); send_string(str); send_string("\n\r");
+		send_string("\n\r");
+
+
+		// PRINT MEASURED DATA
+		W = 2000000.0*Pi/(float)Rotation_Time;		// Calculate angular velocity
+		sprintf(str, "%d", (int)(W));
+		send_string("W: "); send_string(str); send_string("rad/s\n\r");	// Print angular velocity
+		RPM = 60.0*1000000.0/(float)Rotation_Time;	// Calculate RPM
+		sprintf(str, "%d", (int)RPM);
+		send_string("RPM: "); send_string(str); send_string("\n\r");	// Print RPM
+		sprintf(str, "%d", Rotation_Time);
+		send_string("Rotation Time: ");
+		send_string(str); send_string("us\n\r");	// Print Rotation Time
+		send_string("\n\r");
+		sprintf(str, "%d", (int)TIM4->CCR1);		// Print actual duty cycle
+		send_string("PWM: "); send_string(str); send_string("/200 \n\r");
+		if(PI_ON){
+			send_string("PI regulator ON\n\r");
+		}else {
+			send_string("PI regulator OFF\n\r");
+		}
+		sprintf(str, "%d", (int)PI_Out);			// Print PI regulator output duty
+		send_string("PI regulator output: ");
+		send_string(str); send_string("/200 \n\r");
+
+		// PRINT MEASURED CURRENTS
+		send_string("-----CURRENTS-----\n\r");
+		sprintf(str, "%d", (int)((float)Iw*1000.0));
+		send_string("W_Current: ");
+		send_string(str); send_string("mA\n\r");
+		sprintf(str, "%d", (int)((float)Iv*1000.0));
+		send_string("V_Current: ");
+		send_string(str); send_string("mA\n\r");
+		sprintf(str, "%d", (int)((float)Iu*1000.0));
+		send_string("U_Current: ");
+		send_string(str); send_string("mA\n\r");
+		send_string("########################################\n\r");
+		Send_Data = 0;
 	}
 }
 
