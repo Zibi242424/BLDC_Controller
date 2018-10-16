@@ -32,8 +32,6 @@
 #include "defines.h"
 
 extern unsigned int ticks;
-extern uint8_t Stop;
-extern uint8_t Direction;
 extern uint8_t Commutation;
 extern int Set_Rotation_Time;
 extern uint8_t Measure_Speed;
@@ -42,22 +40,13 @@ extern int Rotation_Time;
 extern uint8_t Calculate_PI;
 extern uint8_t PI_ON;
 extern uint16_t Send_Data;
-extern uint8_t Begin_Measurement;
-extern double KI;
-extern uint8_t LS_ADD;
-extern int time;
 extern int Reference_Commutation_Step;
-extern uint16_t index;
-extern uint16_t t;
 extern float Integral_W;
-extern int Theta;
 extern float W;
-extern uint8_t Measure_Current;
-extern int *pADC_Values;
-extern int ADC_Values_Address;
-extern uint8_t COMM;
 extern uint16_t ADC_DMA_Values[2];
-extern float Iw, Iv, Iu;
+extern uint8_t Display;
+extern int Regulator_Output;
+
 /** @addtogroup Template_Project
   * @{
   */
@@ -193,13 +182,14 @@ void PendSV_Handler(void)
 void EXTI4_IRQHandler(void){
 	if((EXTI->IMR & EXTI_IMR_MR4) && (EXTI->PR & EXTI_PR_PR4)){
 		if (Commutation == 3 || Commutation == 6){
+			IWDG -> KR |= 0xAAAA;
 			if(Measure_Speed == 1){			// If its first interrupt
 				TIM1->CNT = 0;				// clear timer counter.
 				Reference_Commutation_Step = Commutation;	// Save the Commutation step
 				Measure_Speed++;				// Increase variable
 			}
 			// If its the same commutation step and 2<=Measure_Speed<7
-			else if(Measure_Speed >= 2 && Measure_Speed < POLE_PAIRS && Commutation == Reference_Commutation_Step)
+			else if(Measure_Speed < POLE_PAIRS && Commutation == Reference_Commutation_Step)
 			{
 				Measure_Speed++;
 			}
@@ -208,22 +198,19 @@ void EXTI4_IRQHandler(void){
 				Rotation_Time = TIM1->CNT;	// read the counter value.
 				Measure_Speed = 1;			// Reset variable
 				Reference_Commutation_Step = 0;
-				Integral_W = 0;
 			}
-			if (Commutation < 6){
-				Commutation++;
-			}
-			else if (Commutation == 6){
+
+			if (Commutation == 6){
 				Commutation = 1;
-			}
+			}else Commutation++;
 
 
 			Commutate(Commutation);
+			RTC -> BKP1R = Commutation;
 		}
 
 	}
 	EXTI -> PR |= EXTI_PR_PR4;
-
 
 }
 /*========================================================
@@ -236,6 +223,7 @@ void EXTI4_IRQHandler(void){
 void EXTI3_IRQHandler(void){
 	if((EXTI->IMR & EXTI_IMR_MR3) && (EXTI->PR & EXTI_PR_PR3)){
 		if (Commutation == 2 || Commutation == 5){
+			IWDG -> KR |= 0xAAAA;
 			if (Commutation < 6){
 				Commutation++;
 			}
@@ -243,11 +231,12 @@ void EXTI3_IRQHandler(void){
 				Commutation = 1;
 			}
 			Commutate(Commutation);
+			RTC -> BKP1R = Commutation;
 		}
 	}
 	EXTI -> PR |= EXTI_PR_PR3;		// Clear interrupt flag
 
-
+	LED_OFF;
 }
 
 /*========================================================
@@ -260,6 +249,7 @@ void EXTI3_IRQHandler(void){
 void EXTI2_IRQHandler(void){
 	if((EXTI->IMR & EXTI_IMR_MR2) && (EXTI->PR & EXTI_PR_PR2)){
 		if (Commutation == 1 || Commutation == 4){
+			IWDG -> KR |= 0xAAAA;
 			if (Commutation < 6){
 				Commutation++;
 			}
@@ -268,9 +258,10 @@ void EXTI2_IRQHandler(void){
 			}
 		}
 		Commutate(Commutation);
+		RTC -> BKP1R = Commutation;
 	}
 	EXTI -> PR |= EXTI_PR_PR2;		// Clear interrupt flag
-
+	LED_OFF;
 }
 
 /*========================================================
@@ -281,9 +272,15 @@ void EXTI2_IRQHandler(void){
  */
 void TIM5_IRQHandler(void){
 	if ((TIM5 -> DIER & 1) && (TIM5 -> SR & 1)){
+		GPIOC -> BSRRL |= 1 << 10;
 		Calculate_PI = ENABLE;		// Set the flag to calculate the PI regulator output
+		PI_regulator();
 		Send_Data++;
+		if(Check_For_Short()){
+			Mode = FAIL;
+		}
 		TIM5 -> SR &= ~TIM_SR_UIF;	// Clear interrupt flag
+		GPIOC -> BSRRH |= 1 << 10;
 	}
 }
 
@@ -301,6 +298,8 @@ void EXTI15_10_IRQHandler(void){
 			Mode = ALIGN;
 		}else if (Mode == ALIGN){
 			Mode = START;
+		}else if (Mode == END){
+			Mode = IDLE;
 		}
 		if(Mode == RUN && PI_ON == ENABLE && (Set_Rotation_Time - 100) >= 9000){ // If motor is running and
 			Set_Rotation_Time -= 100;		// PI regulator is on, increase the speed
@@ -322,45 +321,72 @@ void EXTI15_10_IRQHandler(void){
 void USART2_IRQHandler(){
 	if (USART2 -> SR & USART_SR_RXNE){
 		char c = USART2 -> DR;			// c = data received from UART
-		if(c == 'a' && Mode == IDLE){	// Change mode to ALIGN
+		if(c == 's' && Mode == IDLE){	// Change mode to ALIGN
 			Mode = ALIGN;
-		}
-		else if(c == 'b'  && Mode == ALIGN){	// Change mode to START
-			Mode = START;
-		}
-		if(c == 'p'  && Mode == RUN){			// Switch on PI regulator
+		}else if(c == 'p'  && Mode == RUN && PI_ON == DISABLE){			// Switch on PI regulator
 			PI_ON = ENABLE;
-		}
-
-		if(c == 's'  && Mode == RUN){			// Stop the motor
+			Regulator_Output = SET;
+		}else if (c == 'p'  && Mode == RUN && PI_ON == ENABLE){
+			PI_ON = DISABLE;
+			Change_Duty_Cycle(TIM4->CCR1);
+		}else if(c == 's'  && Mode == RUN){			// Stop the motor
 			Mode = STOP;
-		}
-		if(c == '8' || c == 'A'){				// Decrease rotation time by 100us
-			if(Set_Rotation_Time-100 >= 9300){
+		}else if(c == '8' || c == 'A'){				// Decrease rotation time by 100us
+			if(Set_Rotation_Time-100 >= MIN_ROTATION_TIME){
 				Set_Rotation_Time -= 100;
 			}
 		}else if(c == '2' || c == 'B'){			// Increase rotation time by 100us
 			Set_Rotation_Time += 100;
-		}
-		if(c == '6' || c == 'C'){				// Decrease rotation time by 1000us
-			if((Set_Rotation_Time - 1000) <= 9300)
-				Set_Rotation_Time = 9300;
+		}else if(c == '6' || c == 'C'){				// Decrease rotation time by 1000us
+			if((Set_Rotation_Time - 1000) <= MIN_ROTATION_TIME)
+				Set_Rotation_Time = MIN_ROTATION_TIME;
 			else Set_Rotation_Time -= 1000;
 		}else if(c == '4' || c == 'D'){			// Increase rotation time by 1000us
 			Set_Rotation_Time += 1000;
-		}
-		else if(c == 'r'){						// Reset MCU
+		}else if(c == 'r'){						// Reset MCU
 			Switch_Off_Output_Stage();
-			send_string("========== ");send_string("SYSTEM RESET");send_string(" ==========");
-			send_string(" \n\r ");
+
+			send_string("========== ");send_string("SOFTWARE RESET");send_string(" ==========\n\r");
+			send_string("\n\r");
 			NVIC_SystemReset();
+		}else if((c == 'd' && Mode == RUN)){
+			Display = ENABLE;
+		}else if(c == 'd'){
+			Display = ENABLE;
+			Display_Manual();
+		}else if(c == 'z' && Mode ==RUN){
+			send_string("Disabling interrupts...");
+			NVIC_DisableIRQ(EXTI4_IRQn);
+			NVIC_DisableIRQ(EXTI3_IRQn);
+			NVIC_DisableIRQ(EXTI2_IRQn);
 		}
+		else if(c == 'q' && Mode == RUN){
+			PI_ON = DISABLE;
+			Change_Duty_Cycle(10);
+		}else if(c == 'w' && Mode == RUN){
+			PI_ON = DISABLE;
+			Change_Duty_Cycle(180);
+		}
+		else if(Mode == END){
+			Mode = IDLE;
+		}else if(Mode != RUN){
+			Display = ENABLE;
+			Display_Manual();
+		}
+
 
 	}
 	USART2 -> SR &= ~USART_SR_RXNE;
 }
 
-
+/*========================================================
+ * 			 		 ADC_IRQHandler
+ *========================================================
+ *	Handler checks if OVERRUN flag is set the it switches of
+ *	the ADC configures the DMA transmission on turns on the
+ *	converter. Thanks to this handler it is guaranteed that
+ *	no data from the ADC is lost.
+ */
 void ADC_IRQHandler(void){
 	if(ADC1 -> SR & ADC_SR_OVR){		// If ADC overrun occures
 		ADC1 -> CR2 &= ~ADC_CR2_ADON;
@@ -377,9 +403,13 @@ void ADC_IRQHandler(void){
 		ADC1 -> CR2 |= ADC_CR2_ADON;		// ADC ON
 
 	}
-
 }
-
+/*========================================================
+ * 			      DMA2_Stream0__IRQHandler
+ *========================================================
+ *	If there's any interrupt from DMA2 Stream0 all the flags
+ *	are cleared.
+ */
 void DMA2_Stream0_IRQHandler(void){
 		// Clear all flags
 		DMA2->LIFCR |= DMA_LIFCR_CFEIF0;

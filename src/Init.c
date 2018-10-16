@@ -51,7 +51,14 @@ void RCC_init(void){
 	RCC -> APB2ENR |= RCC_APB2ENR_SYSCFGEN; // Enable clock for SYSCFG
 	RCC -> APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_TIM1EN
 					  | RCC_APB2ENR_TIM9EN | RCC_APB2ENR_TIM10EN;	// Enable clock for ADC1, TIM1, TIM9 and TIM10
-	RCC -> APB1ENR |= RCC_APB1ENR_USART2EN; // Enable clock for USART2
+	RCC -> APB1ENR |= RCC_APB1ENR_USART2EN | RCC_APB1ENR_PWREN; // Enable clock for USART2 and PWR domain
+
+	PWR -> CR |= PWR_CR_DBP;			// Enable acces to BKP domain
+
+	RCC -> BDCR |= RCC_BDCR_RTCSEL_0;		// LSE clock for RTC
+	RTC -> ISR &= ~RTC_ISR_TAMP1F;
+	RCC -> BDCR |= RCC_BDCR_RTCEN;			// RTC enabled
+	RCC -> BDCR |= RCC_BDCR_LSEON;			// Enable LSE
 
 }
 
@@ -235,7 +242,7 @@ void TIM_init(void){
 	TIM1 -> EGR |= TIM_EGR_UG;		// Registers update and re-initialisation of the counter ENABLED
 
 	TIM1 -> PSC = 80 - 1;			// Prescaler = 79 (1Mhz at its output)
-	TIM1 -> ARR = 50000 - 1;		// Auto-reload register = 49 999;
+	TIM1 -> ARR = 65500 - 1;		// Auto-reload register = 49 999;
 	TIM1 -> CNT = 0;				// Counter = 0
 
 
@@ -401,7 +408,12 @@ void TIM_init(void){
 	TIM5 -> DIER |= TIM_DIER_UIE;	// Update interrupt enabled
 
 	TIM5 -> PSC = 20 - 1;			// Prescaler = 19 (2MHz at its output)
-	TIM5 -> ARR = 1000 - 1;			// Auto-reload register = 999;
+	int PI_freq = Bw;
+	if (PI_freq == 1000){
+		TIM5 -> ARR = 2000 - 1;			// Auto-reload register = 999;
+	}else if(PI_freq == 2000){
+		TIM5 -> ARR = 1000 - 1;
+	}else TIM5 -> ARR = 1000 - 1;
 	TIM5 -> CNT = 0;				// Counter = 0
 
 	TIM5 -> CR1 |= TIM_CR1_CEN;		 // Enable counter
@@ -496,13 +508,13 @@ void NVIC_init(void){
 
 	NVIC_SetPriority(TIM5_IRQn, 1);		 // TIM5 interrupt priority=1
 
-	NVIC_SetPriority(USART2_IRQn, 0);	 // USART2 interrupt priority
+	NVIC_SetPriority(USART2_IRQn, 1);	 // USART2 interrupt priority
 	NVIC_EnableIRQ(USART2_IRQn);		 // Enable interrupt from USART2
 
-	NVIC_SetPriority(ADC_IRQn, 2);		 // ADC1 interrupt priority
+	NVIC_SetPriority(ADC_IRQn, 3);		 // ADC1 interrupt priority
 	NVIC_EnableIRQ(ADC_IRQn);
 
-	NVIC_SetPriority(DMA2_Stream0_IRQn, 2);
+	NVIC_SetPriority(DMA2_Stream0_IRQn, 3);
 	NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 
@@ -529,7 +541,7 @@ void ADC_init(void){
 
 	//ADC1 -> CR1 &= ~ADC_CR1_DISCNUM;		// One conversion is done in discontinuous mode
 	//ADC1 -> CR1 |= ADC_CR1_RES_0;			// ADC resolution = 10 bits
-	//ADC1 -> CR1 |= ADC_CR1_DISCNUM_0;		// Two conversions are done in discontinous mode
+	ADC1 -> CR1 |= ADC_CR1_DISCNUM_0;		// Two conversions are done in discontinous mode
 
 	ADC1 -> CR1 |= ADC_CR1_DISCEN;			// Discontinuous mode enable
 //
@@ -538,8 +550,8 @@ void ADC_init(void){
 	//ADC1 -> CR1 |= ADC_CR1_EOCIE;			// Interrupt generation enable
 
 	ADC1 -> CR1 |= ADC_CR1_OVRIE;			// Overrun interrupt enabled
-	ADC1 -> CR1 |= ADC_CR1_EOCIE;			// End of conversion interrupt enabled
-	//ADC1 -> CR2 |= ADC_CR2_DDS;			// DMA requests are made as long as data
+	//ADC1 -> CR1 |= ADC_CR1_EOCIE;			// End of conversion interrupt enabled
+	//ADC1 -> CR2 |= ADC_CR2_DDS;				// DMA requests are made as long as data
 											// is converted
 
 	ADC1 -> SMPR1 |= ADC_SMPR1_SMP10_0;		// 15 cycles sampling time for IN10
@@ -560,12 +572,10 @@ void ADC_init(void){
 	ADC1 -> CR2 &= ~ADC_CR2_EXTEN;						// Clear the bits for trigger slope selection
 	ADC1 -> CR2 |=  ADC_CR2_EXTEN_0;					// Trigger rising edge
 	ADC1 -> CR2 &= ~ADC_CR2_ALIGN;						// Right data alignment
-	ADC1 -> CR2 |= ADC_CR2_CONT;						// Continous mode one
+	//ADC1 -> CR2 |= ADC_CR2_CONT;						// Continous mode one
 
 	ADC1 -> CR2 |= ADC_CR2_EOCS;						// EOC bit is set after ever finished conversion
 	ADC1 -> CR2 |= ADC_CR2_DMA;							// DMA Mode enabled
-	//ADC_RegularChannelConfig(ADC1, ADC_Channel_10, 1, ADC_SampleTime_15Cycles);
-	//ADC_RegularChannelConfig(ADC1, ADC_Channel_11, 2, ADC_SampleTime_15Cycles);
 
 	ADC1 -> CR2 |= ADC_CR2_ADON;						// ADC ON
 
@@ -632,4 +642,18 @@ void DMA_init(void){
 	DMA2_Stream0 -> CR |= DMA_SxCR_EN;
 
 }
+
+
+
+void WWDG_init(void){
+	WWDG->CFR |= 0b1111111; 		// Value to be compared with downcounter
+	WWDG -> CR |= 0b1111111;
+
+	WWDG -> CFR |= WWDG_CFR_WDGTB0;
+
+	IWDG -> RLR |= 0xFF;
+	IWDG -> PR |= 0;
+}
+
+
 

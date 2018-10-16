@@ -6,7 +6,7 @@
  */
 #include "BLDC_lib.h"
 
-
+extern int Send_Data;
 // Duty ramp used during alignment procedure
 uint8_t AlignRamp[25]={3, 4, 5, 6,
 7, 8, 9, 10, 15, 20, 25, 30,
@@ -121,6 +121,7 @@ void Alignment(void){
 		TIM4 -> CCR1 = AlignRamp[StepNumber];
 		delay_ms(30);
 		StepNumber += 1;
+
 	}
 
 	TIM4 -> CCR1 = 0;
@@ -143,9 +144,9 @@ void Alignment(void){
  */
 void Start(void){
 	uint8_t Step = 0;
-	uint16_t time = 6000;
-	uint8_t turn= 0;
-	int i =0;
+	uint16_t time = 6000;		// Variable describing intervals between commutation steps
+	uint8_t turn = 0;
+	int i = 0;
 	TIM4 -> CCR1 = StartRamp[Step];
 	TIM4 -> CCR2 = StartRamp[Step];
 	TIM4 -> CCR3 = StartRamp[Step];
@@ -190,6 +191,7 @@ void Start(void){
 		Commutation = 1;
 		turn++;
 
+		//if (Step < 29 && turn == 2) {
 		if (Step < 29 && turn == 2) {
 			Step++;
 			TIM4 -> CCR1 = StartRamp[Step];
@@ -208,9 +210,10 @@ void Start(void){
 			NVIC_EnableIRQ(EXTI3_IRQn);
 			NVIC_EnableIRQ(EXTI2_IRQn);
 			NVIC_EnableIRQ(TIM5_IRQn);
+			IWDG -> KR |= 0xCCCC;
+			IWDG -> KR |= 0xAAAA;
 			Commutate(Commutation);
 			break;
-
 		}
 		i++;
 	}
@@ -247,27 +250,31 @@ int Change_Duty_Cycle(int Duty){
  *  @retval Value to written into TIM4->CCRx registers
  */
 long double PI_regulator(){
-	LED_ON;
-	Error = Set_Rotation_Time - Rotation_Time;	// Calculate error
 
-	// If calculations enabled and PI is ON
-	if (Calculate_PI == ENABLE && PI_ON == ENABLE  && (Error > 50 || Error < -50)){
+	if(PI_ON == ENABLE){		// If PI regulator is ON
+		Error = Set_Rotation_Time - Rotation_Time;	// Calculate error
 		Integral += Error;		// Calculate integral of error
+	}else{					// If PI regulator is OFF
+		// In order to not saturate the I factor
+		Error = 0;			// Set error to 0
+		Integral = 0;		// Set integral to 0;
+	}
+
+	// If calculations enabled and PI regulator is ON
+	if (Calculate_PI == ENABLE && PI_ON == ENABLE && (Error > 50 || Error < -50)){
 		// Calculate PI output
 		PI_Out = -(CFG_M0_PI_ID_KP*(double)Error + CFG_M0_PI_ID_KI*(double)Integral)/100000.0;
 		// If calculated PI output is less than 0, PI output is 1;
-		if(PI_Out < 0){
-			Change_Duty_Cycle(1);	// Set new duty cycle
-		}
-		else if(PI_Out <= 199){		// if calculated PI output is < 190
-			Change_Duty_Cycle((int)(PI_Out));	// Set new duty Cycle
-		}else if(PI_Out > 199){
-			//Integral = 0;
+		if(PI_Out < 0 && Regulator_Output){
+			Change_Duty_Cycle(0);	// Set new duty cycle
+		}else if(PI_Out < 199 && Regulator_Output){
+			Change_Duty_Cycle((int)(PI_Out));
+		}else if(PI_Out > 199 && Regulator_Output){		// else if PI ouput is out of range set max duty
+			Integral = 0;
 			Change_Duty_Cycle(199);
 		}
 		Calculate_PI = DISABLE;		// Clear flag
 	}
-	LED_OFF;
 	return PI_Out;
 }
 

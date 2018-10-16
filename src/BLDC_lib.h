@@ -17,6 +17,7 @@ extern long double PI_Out;
 extern int Duty_Cycle;
 extern int Set_Rotation_Time, Rotation_Time;
 extern uint8_t LS_ADD;
+extern Regulator_Output;
 
 
 void Alignment(void);

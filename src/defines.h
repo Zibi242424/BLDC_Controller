@@ -14,9 +14,11 @@
 #define TwoOverPi 0.6366f			// 2/Pi
 #define Pi 3.1416f					// Pi number
 
+#define MIN_ROTATION_TIME	9500	// Minimum rotation time used in application (maximum speed)
+
 // Motor constants
 #define Li ((22.186)/(1000000.0))	// Windings inductance
-#define R (0.28384)					// Windings resistance
+#define R (0.170)					// Windings resistance
 #define Vdc (10.0)					// Supply voltage
 #define Bw (2000.0)					// PI regulator sampling frequency
 #define POLE_PAIRS 7				// Number of pole pairs in the motor
@@ -44,7 +46,7 @@
 #define CFG_M0_PI_IQ_KP 	(kpq_multi*(CALC_KP))  	//brief Define the Kp parameter value.
 #define CFG_M0_PI_IQ_KI 	(kiq_multi*(CALC_KI))   //brief Define the Ki parameter value.
 
-enum {IDLE = 0, ALIGN = 1, START = 2, RUN = 3, STOP = 4};
+enum {IDLE = 0, ALIGN = 1, START = 2, RUN = 3, STOP = 4, END = 5, FAIL = 6};
 
 // Macros to control the output stages
 #define W_HS_ON	 TIM4->CCER|=0x0001		// Enable PWM output for W phase highside switch
@@ -70,7 +72,6 @@ enum {IDLE = 0, ALIGN = 1, START = 2, RUN = 3, STOP = 4};
 #define V_ADC_CHANNEL 11
 #define U_ADC_CHANNEL 12
 
-extern double KI;
 
 
 

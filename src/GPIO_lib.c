@@ -34,7 +34,7 @@ void delay_us(int microseconds){
  *
  * @param  milliseconds: number of milliseconds to wait
  * @retval None
- */s
+ */
 void delay_ms(int milliseconds)
 {
 	if(milliseconds < TIM2->ARR){
@@ -55,11 +55,14 @@ void delay_ms(int milliseconds)
  */
 void Toggle_Pin(GPIO_TypeDef * GPIO, int GPIO_Pin){
 	if (((GPIO->MODER>>(2*GPIO_Pin)) & 0b01) == 0b01){ // Check if pin is an output
+		GPIO -> ODR ^= 1 << GPIO_Pin;
+	}
+	/*if (((GPIO->MODER>>(2*GPIO_Pin)) & 0b01) == 0b01){ // Check if pin is an output
 		if ((GPIO->ODR & (1 << GPIO_Pin)) > 0)		   // If pin is in high state
 			GPIO->BSRRH |= 1 << GPIO_Pin;			   // Reset pin state
 		else
 			GPIO->BSRRL |= 1 << GPIO_Pin;
-	}
+	}*/
 }
 
 /*========================================================
@@ -87,9 +90,9 @@ void Switch_Off_Output_Stage(void){
  * are on at the same time and if so it switches off all of them.
  *
  * @param  None
- * @retval None
+ * @retval Error Code
  */
-void Check_For_Short(void){
+int Check_For_Short(void){
 	if((TIM4->CCER & 0x0001) && (GPIOB->ODR & 0x0001)){
 		W_HS_OFF;
 		V_HS_OFF;
@@ -97,6 +100,7 @@ void Check_For_Short(void){
 		W_LS_OFF;
 		V_LS_OFF;
 		U_LS_OFF;
+		return 1;
 	}else if(((TIM4->CCER>>4) & 0x0001) && ((GPIOB->ODR >> 1) & 0x0001)){
 		W_HS_OFF;
 		V_HS_OFF;
@@ -104,6 +108,7 @@ void Check_For_Short(void){
 		W_LS_OFF;
 		V_LS_OFF;
 		U_LS_OFF;
+		return 1;
 	}else if(((TIM4->CCER>>8) & 0x0001) && ((GPIOB->ODR >> 2) & 0x0001)){
 		W_HS_OFF;
 		V_HS_OFF;
@@ -111,35 +116,11 @@ void Check_For_Short(void){
 		W_LS_OFF;
 		V_LS_OFF;
 		U_LS_OFF;
+		return 1;
 	}
+	return 0;
 }
 
-/*========================================================
- * 			 		 send_char(char)
- *========================================================
- * Function sends one single char via USART2.
- *
- * @param  c: character to be sent via UART
- * @retval None
- */
-void send_char(char c){
-	while((USART2->SR & USART_SR_TXE) == RESET){	// Wait until previous transfer ended
-	}
-	USART2->DR = (c & (uint16_t)0x01FF);
-}
 
-/*========================================================
- * 			 	  send_string(const char *)
- *========================================================
- * Function sends string via USART2.
- *
- * @param  *s: pointer to the first item of a string
- * @retval None
- */
-void send_string(const char *s){
-	while(*s){
-		send_char(*s++);
-	}
-}
 
 
