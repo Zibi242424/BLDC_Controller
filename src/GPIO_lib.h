@@ -1,3 +1,6 @@
+#ifndef GPIO_LIB_H_
+#define GPIO_LIB_H_
+
 #include "stm32f4xx.h"
 #include "defines.h"
 
@@ -13,3 +16,6 @@ void delay_us(int);
 void Toggle_Pin(GPIO_TypeDef * GPIO, int GPIO_Pin);
 void Switch_Off_Output_Stage(void);
 int  Check_For_Short(void);
+
+
+#endif

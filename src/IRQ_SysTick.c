@@ -10,7 +10,7 @@ volatile unsigned int ticks;
 
 
 /*========================================================
- * 			 		   SysTick_Handler
+ * SysTick_Handler
  *========================================================
  * 	Interrupt handler from Cortex SysTick timer.
  * 	Function adds 1 to global variable 'tick' which is used in

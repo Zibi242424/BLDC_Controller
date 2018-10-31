@@ -1,9 +1,3 @@
-/*
- * Macros.h
- *
- *  Created on: Jul 18, 2018
- *      Author: Zbigniew Mansel
- */
 #include "BLDC_lib.h"
 
 extern int Send_Data;
@@ -16,20 +10,20 @@ uint8_t AlignRamp[25]={3, 4, 5, 6,
 
 // Duty cycle for the start procedure
 uint8_t StartRamp[30] = {33, 34, 35, 36, 37,
-38, 38, 38, 39, 40, 41, 42, 43, 44, 45, 46,
-47, 47, 48, 48, 49, 49, 50, 50, 50, 51, 52,
-53, 54, 55
+ 38, 38, 38, 39, 40, 41, 42, 43, 44, 45, 46,
+ 47, 47, 48, 48, 49, 49, 50, 50, 50, 51, 52,
+ 53, 54, 55
 };
 
 // Delays between changing the commutation step during start procedure
-uint16_t TimeRamp[30] = {6000, 5800, 5600, 5400,
-5200, 5000, 4800, 4600, 4400, 4200, 4000, 3800, 3600, 3400,
-3200, 3000, 3000, 2800, 2600, 2400, 2200, 2000, 1800, 1600,
-1400, 1200, 1000, 1000, 1000, 1000
+uint16_t TimeRamp[30] = {6000, 5800, 5600, 5400,5200,
+5000, 4800, 4600, 4400, 4200, 4000, 3800, 3600, 3400,
+3200, 3000, 3000, 2800, 2600, 2400, 2200, 2000, 1800,
+1600, 1400, 1200, 1000, 1000, 1000, 1000
 };
 
 /*========================================================
- * 			 		   Commutate(int)
+ * Commutate(int)
  *========================================================
  * 	Function changes the state of the output stage corresponding to the commutation table.
  * 	As a parameter it takes an integer from interval 1:6. If any other value is given all
@@ -89,7 +83,7 @@ void Commutate(int Commutation){
 }
 
 /*========================================================
- * 			 		 Alignment(void)
+ * Alignment(void)
  *========================================================
  *  Function moves a motor to a known position in order to make start procedure possible.
  *  Alignment procedure takes around 25*30ms=750ms. During this phase W phase is connected to voltage
@@ -133,7 +127,7 @@ void Alignment(void){
 }
 
 /*========================================================
- * 			 			 Start(void)
+ * Start(void)
  *========================================================
  * Function start the motor. It uses 2 ramps (one for duty cycle and one for switching times) in order
  * to create smooth start procedure. After 80 full commutation cycles when Back-EMF is big enough,
@@ -143,9 +137,9 @@ void Alignment(void){
  * @retval None
  */
 void Start(void){
-	uint8_t Step = 0;
+	uint8_t Step = 0;			// Variable describing which element of a table to choose
 	uint16_t time = 6000;		// Variable describing intervals between commutation steps
-	uint8_t turn = 0;
+	uint8_t turn = 0;			// Delaying variable
 	int i = 0;
 	TIM4 -> CCR1 = StartRamp[Step];
 	TIM4 -> CCR2 = StartRamp[Step];
@@ -153,7 +147,7 @@ void Start(void){
 	time = TimeRamp[Step];
 	Commutation = 1;
 	while(Mode == START){
-		LED_OFF;			// Switch off Nucleo board LED
+		LED_OFF;			// Switch off Nucleo board's LED
 
 		// STEP 1 W+, V-
 		Commutate(Commutation);
@@ -191,7 +185,7 @@ void Start(void){
 		Commutation = 1;
 		turn++;
 
-		//if (Step < 29 && turn == 2) {
+		// If tables have not ended and turn==2
 		if (Step < 29 && turn == 2) {
 			Step++;
 			TIM4 -> CCR1 = StartRamp[Step];
@@ -209,9 +203,9 @@ void Start(void){
 			NVIC_EnableIRQ(EXTI4_IRQn);		// Enable interrupts from the comparator
 			NVIC_EnableIRQ(EXTI3_IRQn);
 			NVIC_EnableIRQ(EXTI2_IRQn);
-			NVIC_EnableIRQ(TIM5_IRQn);
-			IWDG -> KR |= 0xCCCC;
-			IWDG -> KR |= 0xAAAA;
+			NVIC_EnableIRQ(TIM5_IRQn);		// Enable interrupts from TIM5 (PI regulator
+			IWDG -> KR |= 0xCCCC;			// Enable IWDG
+			IWDG -> KR |= 0xAAAA;			// Reset IWDG
 			Commutate(Commutation);
 			break;
 		}
@@ -220,7 +214,7 @@ void Start(void){
 }
 
 /*========================================================
- * 			 		Change_Duty_Cycle(int)
+ * Change_Duty_Cycle(int)
  *========================================================
  *  Function changes the duty cycle of all phases and returns
  *  the actual duty cycle in percent.
@@ -241,7 +235,7 @@ int Change_Duty_Cycle(int Duty){
 }
 
 /*========================================================
- * 			 			  PI(void)
+ * PI(void)
  *========================================================
  *  Function calculates the output of the PI regulator.
  *  The output is PWM duty.
@@ -254,23 +248,23 @@ long double PI_regulator(){
 	if(PI_ON == ENABLE){		// If PI regulator is ON
 		Error = Set_Rotation_Time - Rotation_Time;	// Calculate error
 		Integral += Error;		// Calculate integral of error
-	}else{					// If PI regulator is OFF
+	}else{						// If PI regulator is OFF
 		// In order to not saturate the I factor
-		Error = 0;			// Set error to 0
-		Integral = 0;		// Set integral to 0;
+		Error = 0;				// Set error to 0
+		Integral = 0;			// Set integral to 0;
 	}
 
 	// If calculations enabled and PI regulator is ON
 	if (Calculate_PI == ENABLE && PI_ON == ENABLE && (Error > 50 || Error < -50)){
 		// Calculate PI output
 		PI_Out = -(CFG_M0_PI_ID_KP*(double)Error + CFG_M0_PI_ID_KI*(double)Integral)/100000.0;
-		// If calculated PI output is less than 0, PI output is 1;
-		if(PI_Out < 0 && Regulator_Output){
+		// If calculated PI output is less than 0, PI output is 0;
+		if(PI_Out < 0){
 			Change_Duty_Cycle(0);	// Set new duty cycle
-		}else if(PI_Out < 199 && Regulator_Output){
+		}else if(PI_Out < 199){		// If in range set calculated Output
 			Change_Duty_Cycle((int)(PI_Out));
-		}else if(PI_Out > 199 && Regulator_Output){		// else if PI ouput is out of range set max duty
-			Integral = 0;
+		}else if(PI_Out > 199){		// Else if PI output is out of range set max duty
+			Integral = 0;			// and reset the integral
 			Change_Duty_Cycle(199);
 		}
 		Calculate_PI = DISABLE;		// Clear flag

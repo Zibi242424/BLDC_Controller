@@ -13,7 +13,7 @@
 #define LCD_RST			GPIO_Pin_3
 
 /*========================================================
- * 			 		   delay_us(int)
+ * delay_us(int)
  *========================================================
  * Delay function based on SysTick timer. As a parameter it takes
  * number of microseconds to wait
@@ -27,7 +27,7 @@ void delay_us(int microseconds){
 }
 
 /*========================================================
- * 			 			delay_ms(int)
+ * delay_ms(int)
  *========================================================
  * Delay function based on TIM2. As a parametr it takes number of
  * milliseconds to wait. Maximum delay time is 1s.
@@ -44,7 +44,7 @@ void delay_ms(int milliseconds)
 }
 
 /*========================================================
- * 			 	Toggle_Pin(GPIO_TypeDef *, int)
+ * Toggle_Pin(GPIO_TypeDef *, int)
  *========================================================
  *  Function changes the state on the output pin to the
  *  opposite one.
@@ -66,7 +66,7 @@ void Toggle_Pin(GPIO_TypeDef * GPIO, int GPIO_Pin){
 }
 
 /*========================================================
- * 			 	 Switch_Off_Output_Stage(void)
+ * Switch_Off_Output_Stage(void)
  *========================================================
  * Function switches of all the MCU's outputs to the driver.
  *
@@ -84,7 +84,7 @@ void Switch_Off_Output_Stage(void){
 
 
 /*========================================================
- * 			 		 Check_For_Short(void)
+ *  Check_For_Short(void)
  *========================================================
  * Function checks if both highside and lowside of any of half bridges
  * are on at the same time and if so it switches off all of them.

@@ -4,6 +4,10 @@
  *  Created on: Jul 19, 2018
  *      Author: adm_wdowiak
  */
+#ifndef BLDC_LIB_H_
+#define BLDC_LIB_H_
+
+
 #include "GPIO_lib.h"
 #include "arm_math.h"
 
@@ -17,7 +21,7 @@ extern long double PI_Out;
 extern int Duty_Cycle;
 extern int Set_Rotation_Time, Rotation_Time;
 extern uint8_t LS_ADD;
-extern Regulator_Output;
+extern int Regulator_Output;
 
 
 void Alignment(void);
@@ -29,4 +33,6 @@ long double PI_regulator();
 void ADC_GetConvValue(int, int *);
 int ADC_Read(int);
 float32_t CLARKE_PARK_transform();
+
+#endif
 

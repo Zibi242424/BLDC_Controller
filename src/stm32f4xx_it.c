@@ -168,7 +168,7 @@ void PendSV_Handler(void)
 /******************************************************************************/
 
 /*========================================================
- * 			 		   EXTI4_Handler
+ * EXTI4_Handler
  *========================================================
  * 	Interrupt from comparator from COMP_W output. This interrupt informs that
  * 	zero crossing of the W phase occurred. In the interrupt commutation step is changed
@@ -214,7 +214,7 @@ void EXTI4_IRQHandler(void){
 
 }
 /*========================================================
- * 			 		   EXTI3_Handler
+ * EXTI3_Handler
  *========================================================
  * 	Interrupt from comparator from COMP_V output. This interrupt informs that
  * 	zero crossing of the V phase occured. In the interrupt commutation step is changed
@@ -240,7 +240,7 @@ void EXTI3_IRQHandler(void){
 }
 
 /*========================================================
- * 			 		   EXTI2_Handler
+ * EXTI2_Handler
  *========================================================
  * 	Interrupt from comparator from COMP_U output. This interrupt informs that
  * 	zero crossing of the U phase occured. In the interrupt commutation step is changed
@@ -265,7 +265,7 @@ void EXTI2_IRQHandler(void){
 }
 
 /*========================================================
- * 			 		   TIM5_Handler
+ * TIM5_Handler
  *========================================================
  * 	Interrupt from TIM5 used to trigger PI regulator calculations.
  * 	In the interrupt 'Calculate_PI' flag is set
@@ -285,7 +285,7 @@ void TIM5_IRQHandler(void){
 }
 
 /*========================================================
- * 			 		 EXTI15_10_Handler
+ * EXTI15_10_Handler
  *========================================================
  *	Interrupt from user button on Nucleo64 board. Used to
  *	toggle user button.
@@ -313,7 +313,7 @@ void EXTI15_10_IRQHandler(void){
 
 }
 /*========================================================
- * 			 		 USART2_IRQHandler
+ * USART2_IRQHandler
  *========================================================
  *	Interrupt from UART interface used to receive data from user
  *	which allows to control the work of MCU and of the algorithm.
@@ -325,7 +325,6 @@ void USART2_IRQHandler(){
 			Mode = ALIGN;
 		}else if(c == 'p'  && Mode == RUN && PI_ON == DISABLE){			// Switch on PI regulator
 			PI_ON = ENABLE;
-			Regulator_Output = SET;
 		}else if (c == 'p'  && Mode == RUN && PI_ON == ENABLE){
 			PI_ON = DISABLE;
 			Change_Duty_Cycle(TIM4->CCR1);
@@ -343,31 +342,23 @@ void USART2_IRQHandler(){
 			else Set_Rotation_Time -= 1000;
 		}else if(c == '4' || c == 'D'){			// Increase rotation time by 1000us
 			Set_Rotation_Time += 1000;
-		}else if(c == 'r'){						// Reset MCU
+		}else if(c == 'r'){						// Reset of MCU
 			Switch_Off_Output_Stage();
-
 			send_string("========== ");send_string("SOFTWARE RESET");send_string(" ==========\n\r");
 			send_string("\n\r");
 			NVIC_SystemReset();
-		}else if((c == 'd' && Mode == RUN)){
+		}else if((c == 'd' && Mode == RUN)){	// Display manual
 			Display = ENABLE;
 		}else if(c == 'd'){
 			Display = ENABLE;
 			Display_Manual();
-		}else if(c == 'z' && Mode ==RUN){
-			send_string("Disabling interrupts...");
-			NVIC_DisableIRQ(EXTI4_IRQn);
-			NVIC_DisableIRQ(EXTI3_IRQn);
-			NVIC_DisableIRQ(EXTI2_IRQn);
-		}
-		else if(c == 'q' && Mode == RUN){
-			PI_ON = DISABLE;
+		}else if(c == 'q' && Mode == RUN){		// Set the minimum duty cycle @10V supply
+			PI_ON = DISABLE;					// Disable PI regulator
 			Change_Duty_Cycle(10);
-		}else if(c == 'w' && Mode == RUN){
-			PI_ON = DISABLE;
+		}else if(c == 'w' && Mode == RUN){		// Set maximum duty cycle @10V supply
+			PI_ON = DISABLE;					// Disable PI regulator
 			Change_Duty_Cycle(180);
-		}
-		else if(Mode == END){
+		}else if(Mode == END){
 			Mode = IDLE;
 		}else if(Mode != RUN){
 			Display = ENABLE;
@@ -380,7 +371,7 @@ void USART2_IRQHandler(){
 }
 
 /*========================================================
- * 			 		 ADC_IRQHandler
+ * ADC_IRQHandler
  *========================================================
  *	Handler checks if OVERRUN flag is set the it switches of
  *	the ADC configures the DMA transmission on turns on the
@@ -388,13 +379,13 @@ void USART2_IRQHandler(){
  *	no data from the ADC is lost.
  */
 void ADC_IRQHandler(void){
-	if(ADC1 -> SR & ADC_SR_OVR){		// If ADC overrun occures
+	if(ADC1 -> SR & ADC_SR_OVR){			// If ADC overrun occurred
 		ADC1 -> CR2 &= ~ADC_CR2_ADON;
 		ADC1 -> CR2 &= ~ADC_CR2_DMA;
-		DMA2_Stream0 -> CR &= ~DMA_SxCR_EN;			// Disable DMA
+		DMA2_Stream0 -> CR &= ~DMA_SxCR_EN;	// Disable DMA
 		DMA2_Stream0 -> PAR = (uint32_t)&ADC1->DR;			// Peripheral address
 		DMA2_Stream0 -> M0AR = (uint32_t)ADC_DMA_Values;	// Memory address
-		DMA2_Stream0 -> NDTR = 2;			//
+		DMA2_Stream0 -> NDTR = 2;
 		DMA2 -> LIFCR |= 0b111101;			// Clear DMA2_Stream0 flags
 		DMA2_Stream0 -> CR |= DMA_SxCR_EN;	// Enable DMA
 		ADC1 -> SR &= ~ADC_SR_OVR;			// Clear flags
@@ -405,7 +396,7 @@ void ADC_IRQHandler(void){
 	}
 }
 /*========================================================
- * 			      DMA2_Stream0__IRQHandler
+ * DMA2_Stream0__IRQHandler
  *========================================================
  *	If there's any interrupt from DMA2 Stream0 all the flags
  *	are cleared.

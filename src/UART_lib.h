@@ -1,9 +1,11 @@
+#ifndef UART_LIB_H_
+#define UART_LIB_H_
+
 #include "stm32f4xx.h"
 #include "GPIO_lib.h"
 #include "defines.h"
 
-#ifndef UART_H_
-#define UART_H_
+
 
 extern uint8_t Display;
 extern uint8_t Mode;
@@ -14,4 +16,4 @@ void Display_Manual(void);
 
 
 
-#endif /* UART_H_ */
+#endif

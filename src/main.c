@@ -5,40 +5,39 @@
 #include <stdio.h>
 #include "stm32f4xx.h"
 #include "system_stm32f4xx.h"
-#include "stm32f4xx_rcc.h"
-#include "misc.h"
+//#include "stm32f4xx_rcc.h"
+//#include "misc.h"
 
 
 /******************** GLOBAL VARIABLES *********************/
-int Rotation_Time = 0;			// Variable containing time of one whole spin in us
-int Set_Rotation_Time = 16000;	// Variable containing desired rotation time in us
-float RPM = 0;					// Actual RPM (RotatesPerMinute) value
-float Set_RPM = 0;				// Desired RPM
-int Error, Integral = 0;		// Variables for the PI regulator
+int Rotation_Time = 0;				// Variable containing time of one whole spin in us
+int Set_Rotation_Time = 16000;		// Variable containing desired rotation time in us
+float RPM = 0;						// Actual RPM (RotatesPerMinute) value
+float Set_RPM = 0;					// Desired RPM
+int Error, Integral = 0;			// Variables for the PI regulator
 long double PI_Out = 0;				// PI regulator output
 int Reference_Commutation_Step = 0;	// Variable used as reference to measure rotor's speed
 
-int Regulator_Output = RESET;
 
-uint8_t Display = DISABLE;		// Flag describing whether to print Manual via UART
+uint8_t Display = DISABLE;			// Flag describing whether to print Manual via UART
 
-float W = 0;					// Rotation speed rad/s
-float Integral_W = 0;			// Integral from rotation speed
+float W = 0;						// Rotation speed [rad/s]
+float Integral_W = 0;				// Integral from rotation speed
 
-uint8_t PI_ON = DISABLE;		// Variable used to turn on the PI regulator
-uint8_t Calculate_PI = DISABLE;	// Variable used to trigger the PI regulator
-uint8_t Mode = IDLE;			// Variable describing state of algorithm
-uint8_t Measure_Speed = 1;		// Variable used to trigger rotation time measurement
+uint8_t PI_ON = DISABLE;			// Variable used to turn on the PI regulator
+uint8_t Calculate_PI = DISABLE;		// Variable used to trigger the PI regulator
+uint8_t Mode = IDLE;				// Variable describing state of algorithm
+uint8_t Measure_Speed = 1;			// Variable used to trigger rotation time measurement
 
-int Commutation = 0;			// Variable storing actual commutation step
-uint16_t Send_Data = 0;			// Variable used to start sending actual motor statistics
+int Commutation = 0;				// Variable storing actual commutation step
+uint16_t Send_Data = 0;				// Variable used to start sending actual motor statistics
 
 
-uint16_t ADC_DMA_Values[2];		// Actual ADC value from channels 10 and 11
+uint16_t ADC_DMA_Values[2];			// Actual ADC value from channels 10 and 11
 
-float32_t Iw;		// W phase current
-float32_t Iv;		// V phase current
-float32_t Iu;		// U phase current
+float32_t Iw;						// W phase current
+float32_t Iv;						// V phase current
+float32_t Iu;						// U phase current
 
 
 char str1[10];		// Strings used in sprintf function
@@ -50,13 +49,13 @@ void Display_Current_Data(void);
 int main(void)
 {
 
-	int IWDG_Reset_Occured = RESET;
-	int SFT_Reset_Occured = RESET;
+	int IWDG_Reset_Occured = RESET;		// Variable informing whether the IWDG reset has happened
+	int SFTR_Reset_Occured = RESET;		// Variable informing whether the software reset has happened
 	if(RCC->CSR & RCC_CSR_WDGRSTF){
 		IWDG_Reset_Occured = SET;
 	}
 	if(RCC->CSR & RCC_CSR_SFTRSTF){
-		SFT_Reset_Occured = SET;
+		SFTR_Reset_Occured = SET;
 	}
 
 	// PERIPHERALS' CONFIGURATION
@@ -80,12 +79,12 @@ int main(void)
 		send_string("----------------------------------------------\n\r\n\r\n\r\n\r");
 		sprintf(str1, "%d", (int)RTC -> BKP1R);	// print BKP register value
 		send_string("\n\rBKP1 register: ");send_string(str1);send_string("\n\r");
-		RTC -> BKP1R = 0;			// Reset the BKP register
+		RTC -> BKP1R = 0;				// Reset the BKP register
 		RCC -> CSR |= RCC_CSR_RMVF;		// Reset the WDGRST flag
 		delay_ms(3000);
 	}
 
-	if(SFT_Reset_Occured){			// If software reset was generated
+	if(SFTR_Reset_Occured){			// If software reset was generated
 		sprintf(str1, "%d", (int)RTC -> BKP1R);	// print BKP register value
 		send_string("\n\rBKP1 register: ");send_string(str1);send_string("\n\r");
 		RTC -> BKP1R = 0;			// Reset the BKP register
@@ -249,7 +248,7 @@ int main(void)
 }
 
 /*========================================================
- * 			 	  Display_Current_Data(void)
+ * Display_Current_Data(void)
  *========================================================
  * Function sends via UART actual values of parameteres
  * like speed, phase currents, PI regulator output etc.

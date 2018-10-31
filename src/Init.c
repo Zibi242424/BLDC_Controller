@@ -2,7 +2,7 @@
 extern uint16_t ADC_DMA_Values[2];
 
 /*========================================================
- * 			 			  RCC_init
+ * RCC_init
  *========================================================
  * Function configures System Clock Source to be an output of PLL.
  * As an input PLL takes HSI signal (16MHz) and converts it into 80MHz signal at the output.
@@ -18,6 +18,7 @@ void RCC_init(void){
 	RCC -> CFGR |= 0b000 << 24;		// MCO_1 prescaler = 1
 	RCC -> CFGR |= 0b00 << 30;		// MCO_2 is a PLL output
 	RCC -> CFGR |= 0b000 << 27;		// MCO_2 prescaler = 2
+
 	RCC -> CFGR &= ~RCC_CFGR_SW;	// HSI as System Clock Source
 	RCC -> CR &= ~RCC_CR_PLLON;		// PLL OFF
 	while(((RCC->CR) & (RCC_CR_PLLRDY)) > 0);	// Wait until PLLRDY=0 (PLL OFF)
@@ -30,30 +31,29 @@ void RCC_init(void){
 	*      				   PLLP = 2
 	* PLL_OUTPUT = 16MHz * (300/30) * 1/2 = 80MHz
 	*/
-	RCC -> PLLCFGR &= ~RCC_PLLCFGR_PLLN;  // Clear PLLN bits
-	RCC -> PLLCFGR |= (300 << 6);		  // PLLN = 300
-	RCC -> PLLCFGR &= ~RCC_PLLCFGR_PLLM;  // Clear PLLM bits
-	RCC -> PLLCFGR |= 30;  				  // PLLM = 30
-	RCC -> PLLCFGR &= ~RCC_PLLCFGR_PLLP;  // Clear PLLP bits. PLLP = 2 (PLLP bits = 0b00)
-	RCC -> CR  |= RCC_CR_PLLON;           // PLLON = 1
-	while (((RCC -> CR) & (1<<25)) == 0 );// Wait until PLLRDY bit is set (PLL locked)
-	RCC -> CFGR &= ~RCC_CFGR_SW;   		  // Select PLL as System Clock Source (SW=0b10)
-	RCC -> CFGR |= RCC_CFGR_SW_1;  		  // Set bit SW_1
-	while(((RCC -> CFGR) & 0b1100) != 0b1000 );// Wait until System Clock Status is set to PLL (SWS=0b10)
-	RCC -> CFGR &= ~(1 << 7);			  // AHB prescaler = 1
-	RCC -> CFGR &= ~(1 << 15);			  // APB2 Prescaler=1 (AHB not divided)
+	RCC -> PLLCFGR &= ~RCC_PLLCFGR_PLLN;  		// Clear PLLN bits
+	RCC -> PLLCFGR |= (300 << 6);		  		// PLLN = 300
+	RCC -> PLLCFGR &= ~RCC_PLLCFGR_PLLM;  		// Clear PLLM bits
+	RCC -> PLLCFGR |= 30;  				  		// PLLM = 30
+	RCC -> PLLCFGR &= ~RCC_PLLCFGR_PLLP;  		// Clear PLLP bits. PLLP = 2 (PLLP bits = 0b00)
+	RCC -> CR  |= RCC_CR_PLLON;           		// PLLON = 1
+	while (((RCC -> CR) & (1<<25)) == 0 );		// Wait until PLLRDY bit is set (PLL locked)
+	RCC -> CFGR &= ~RCC_CFGR_SW;   		  		// Select PLL as System Clock Source (SW=0b10)
+	RCC -> CFGR |= RCC_CFGR_SW_1;  		  		// Set bit SW_1
+	while(((RCC -> CFGR) & 0b1100) != 0b1000 );	// Wait until System Clock Status is set to PLL (SWS=0b10)
+	RCC -> CFGR &= ~(1 << 7);			  		// AHB prescaler = 1
+	RCC -> CFGR &= ~(1 << 15);			  		// APB2 Prescaler=1 (AHB not divided)
 
-	// fAPB1 = SYSCLK/4 = 20MHz
-	// fAPB2 = 80MHz
+
 	RCC -> APB1ENR |= RCC_APB1ENR_TIM2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN
 					  | RCC_APB1ENR_TIM5EN;		// Enable clock for TIM2, TIM3, TIM4 and TIM5
 	RCC -> AHB1ENR |= 0b11111111 | RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_DMA2EN; 	// Enable clock for GPIOA/B/C/D/E/H
-	RCC -> APB2ENR |= RCC_APB2ENR_SYSCFGEN; // Enable clock for SYSCFG
+	RCC -> APB2ENR |= RCC_APB2ENR_SYSCFGEN; 	// Enable clock for SYSCFG
 	RCC -> APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_TIM1EN
 					  | RCC_APB2ENR_TIM9EN | RCC_APB2ENR_TIM10EN;	// Enable clock for ADC1, TIM1, TIM9 and TIM10
-	RCC -> APB1ENR |= RCC_APB1ENR_USART2EN | RCC_APB1ENR_PWREN; // Enable clock for USART2 and PWR domain
+	RCC -> APB1ENR |= RCC_APB1ENR_USART2EN | RCC_APB1ENR_PWREN; 	// Enable clock for USART2 and PWR domain
 
-	PWR -> CR |= PWR_CR_DBP;			// Enable acces to BKP domain
+	PWR -> CR |= PWR_CR_DBP;				// Enable access to BKP domain
 
 	RCC -> BDCR |= RCC_BDCR_RTCSEL_0;		// LSE clock for RTC
 	RTC -> ISR &= ~RTC_ISR_TAMP1F;
@@ -64,7 +64,7 @@ void RCC_init(void){
 
 
 /*========================================================
- * 			 			  GPIO_init
+ * GPIO_init
  *========================================================
  *Function configures all the necessary input and output pins of the MCU.
  *
@@ -101,6 +101,7 @@ void GPIO_init(void){
 //*********** NEW LOWSIDES **********************
 	// Outputs used while switching lowside MOSFETS with TIM3 channels
 	// W LOWSIDE TIM3 CC1
+	// UNUSED
 	GPIOC -> MODER |= 0b10 << 12;		// GPIOC_Pin_6 used as alternative function
 	GPIOC -> OSPEEDR |= 0b11 << 12;		// GPIOC_Pin_6 HIGH SPEED output
 	GPIOC -> OTYPER |= 0b0 << 6;		// GPIOC_Pin_6 is Push-Pull output
@@ -173,7 +174,7 @@ void GPIO_init(void){
 
 //**********************ADC INPUTS************************
 	// ANALOG INPUTS CONFIGURATION
-	// Connected to the opamps outputs
+	// Connected to the op-amps outputs
 	// ADC1_IN10
 	GPIOC -> MODER |= 0b11 << 0;		// GPIOC_Pin_0 is in analog mode
 
@@ -214,7 +215,7 @@ void GPIO_init(void){
 }
 
 /*========================================================
- * 			 			  TIM_init
+ * TIM_init
  *========================================================
  * Function configures timers and their channels which are used to generate
  * PWM signal using Channels 1/2/3 of TIM4. PWM frequency is set to 10kHz. TIM4 CC4 is
@@ -239,7 +240,7 @@ void TIM_init(void){
 
 	TIM1 -> CR2 |= 0b001 << 4;		// CNT_EN is connected do TRGO (Trigger signal for other timers)
 
-	TIM1 -> EGR |= TIM_EGR_UG;		// Registers update and re-initialisation of the counter ENABLED
+	TIM1 -> EGR |= TIM_EGR_UG;		// Registers update and re-initialization of the counter ENABLED
 
 	TIM1 -> PSC = 80 - 1;			// Prescaler = 79 (1Mhz at its output)
 	TIM1 -> ARR = 65500 - 1;		// Auto-reload register = 49 999;
@@ -247,7 +248,7 @@ void TIM_init(void){
 
 
 //=========================================================================
-	// TIM4 configuration which is used to generate a PWM signal for the higside switches.
+	// TIM4 configuration which is used to generate a PWM signal for the highside switches.
 	// Timer is clocked with 40MHz signal.
 	// TIM4 channels are the outputs for the HIGHSIDES.
 	// TIM4 generates 10kHz PWM signal.
@@ -259,7 +260,7 @@ void TIM_init(void){
 	TIM4 -> CR1 |= TIM_CR1_URS;		// Only counter overflow generates and update interrupt
 	TIM4 -> CR1 &= ~TIM_CR1_UDIS;	// Update event enabled
 
-	TIM4 -> EGR |= TIM_EGR_UG;		// Registers update and re-initialisation of the counter ENABLED
+	TIM4 -> EGR |= TIM_EGR_UG;		// Registers update and re-initialization of the counter ENABLED
 	TIM4 -> EGR |= TIM_EGR_CC1G;	// Channel 1 event generation ENABLED (setting CC1F flag ENABLED)
 	TIM4 -> EGR |= TIM_EGR_CC2G;	// Channel 2 event generation ENABLED (setting CC2F flag ENABLED)
 	TIM4 -> EGR |= TIM_EGR_CC3G;	// Channel 3 event generation ENABLED (setting CC3F flag ENABLED)
@@ -438,32 +439,31 @@ void TIM_init(void){
 	// Timer is triggered with 80MHz signal
 	// TIM10 is used to calculate the time between two consecutive
 	// rotor's zero crossing
-	TIM10 -> CR1 &= ~TIM_CR1_CKD;	// Clock division = 1
-	TIM10 -> CR1 &= ~TIM_CR1_ARPE;	// TIM10_ARR is buffered
-	TIM10 -> CR1 |= TIM_CR1_URS;	// Only counter overflow generates and update interrupt
-	TIM10 -> DIER |= TIM_DIER_UIE;	// Update interrupt enabled
+	TIM10 -> CR1 &= ~TIM_CR1_CKD;		// Clock division = 1
+	TIM10 -> CR1 &= ~TIM_CR1_ARPE;		// TIM10_ARR is buffered
+	TIM10 -> CR1 |= TIM_CR1_URS;		// Only counter overflow generates and update interrupt
+	TIM10 -> DIER |= TIM_DIER_UIE;		// Update interrupt enabled
 
 	TIM10 -> DIER |= TIM_DIER_CC1IE;
 
 	TIM10 -> EGR |= TIM_EGR_UG;
 
-	TIM10 -> CCMR1 |= 0b110 << 4;	// CC1 PWM mode
+	TIM10 -> CCMR1 |= 0b110 << 4;		// CC1 PWM mode
 
 	TIM10 -> CCMR1 &= ~TIM_CCMR1_CC1S;
 
 	TIM10 -> CCR1 = 50;
 
-	//TIM10 -> DIER |= TIM_DIER_UIE;	// Update interrupt enable
 
-	TIM10 -> PSC = 80 - 1;			// Prescaler = 79 (1MHz at its output)
-	TIM10 -> ARR = 500 - 1;			// Auto-reload register = 499;
-	TIM10 -> CNT = 0;				// Counter = 0
+	TIM10 -> PSC = 80 - 1;				// Prescaler = 79 (1MHz at its output)
+	TIM10 -> ARR = 500 - 1;				// Auto-reload register = 499;
+	TIM10 -> CNT = 0;					// Counter = 0
 
-	TIM10 -> CR1 |= TIM_CR1_CEN;		 // Enable counter
+	TIM10 -> CR1 |= TIM_CR1_CEN;		// Enable counter
 }
 
 /*========================================================
- * 			 			  NVIC_init
+ * NVIC_init
  *========================================================
  *  Interrupts configuration.
  *
@@ -472,50 +472,50 @@ void TIM_init(void){
  */
 void NVIC_init(void){
 	// Interrupt configuration from user button on Nucleo64 board (GPIOC_Pin_13)
-	SYSCFG -> EXTICR[3] |= (0b0010 << 4);// GPIOC_Pin_13 is the source input for EXTI external interrupt
-	EXTI -> RTSR &= ~EXTI_RTSR_TR13;	// Rising edge trigger disabled
-	EXTI -> FTSR |= EXTI_FTSR_TR13;		// Falling edge trigger enabled
-	EXTI -> IMR |= EXTI_IMR_MR13;		// Interrupt request from line 13 not masked
-	NVIC_SetPriority(EXTI15_10_IRQn, 3);// EXTI13 interrupt priority=1
-	NVIC_EnableIRQ(EXTI15_10_IRQn);		// Enable EXTI interrupts for lines 15:10
+	SYSCFG -> EXTICR[3] |= (0b0010 << 4);	// GPIOC_Pin_13 is the source input for EXTI external interrupt
+	EXTI -> RTSR &= ~EXTI_RTSR_TR13;		// Rising edge trigger disabled
+	EXTI -> FTSR |= EXTI_FTSR_TR13;			// Falling edge trigger enabled
+	EXTI -> IMR |= EXTI_IMR_MR13;			// Interrupt request from line 13 not masked
+	NVIC_SetPriority(EXTI15_10_IRQn, 3);	// EXTI13 interrupt priority=1
+	NVIC_EnableIRQ(EXTI15_10_IRQn);			// Enable EXTI interrupts for lines 15:10
 
 	// Interrupt configuration from W phase (GPIOH_Pin_0)
-	SYSCFG -> EXTICR[1] |= (0b0001 << 0);// GPIOH_Pin_0 is the source input for EXTI internal interrupt
-	EXTI -> RTSR |= EXTI_RTSR_TR4;		 // Rising edge trigger enabled
-	EXTI -> FTSR |= EXTI_FTSR_TR4;		 // Falling edge trigger enabled
-	EXTI -> IMR |= EXTI_IMR_MR4;		 // Interrupt request from line 0 not masked
+	SYSCFG -> EXTICR[1] |= (0b0001 << 0);	// GPIOH_Pin_0 is the source input for EXTI internal interrupt
+	EXTI -> RTSR |= EXTI_RTSR_TR4;			// Rising edge trigger enabled
+	EXTI -> FTSR |= EXTI_FTSR_TR4;		 	// Falling edge trigger enabled
+	EXTI -> IMR |= EXTI_IMR_MR4;		 	// Interrupt request from line 0 not masked
 	NVIC_SetPriority(EXTI4_IRQn, 0);
 
 	// Interrupt configuration from V phase (GPIOH_Pin_1)
-	SYSCFG -> EXTICR[0] |= (0b0001 << 12);// GPIOH_Pin_1 is the source input for EXTI internal interrupt
-	EXTI -> RTSR |= EXTI_RTSR_TR3;		 // Rising edge trigger enabled
-	EXTI -> FTSR |= EXTI_FTSR_TR3;		 // Falling edge trigger enabled
-	EXTI -> IMR |= EXTI_IMR_MR3;		 // Interrupt request from line 1 not masked
-	NVIC_SetPriority(EXTI3_IRQn, 0);	 // EXTI1 interrupt maximum priority
+	SYSCFG -> EXTICR[0] |= (0b0001 << 12);	// GPIOH_Pin_1 is the source input for EXTI internal interrupt
+	EXTI -> RTSR |= EXTI_RTSR_TR3;		 	// Rising edge trigger enabled
+	EXTI -> FTSR |= EXTI_FTSR_TR3;		 	// Falling edge trigger enabled
+	EXTI -> IMR |= EXTI_IMR_MR3;		 	// Interrupt request from line 1 not masked
+	NVIC_SetPriority(EXTI3_IRQn, 0);	 	// EXTI1 interrupt maximum priority
 
 	// Interrupt configuration from U phase (GPIOD_Pin_2)
-	SYSCFG -> EXTICR[0] |= (0b0011 << 8);// GPIOD_Pin_2 is the source input for EXTI internal interrupt
-	EXTI -> RTSR |= EXTI_RTSR_TR2;		 // Rising edge trigger enabled
-	EXTI -> FTSR |= EXTI_FTSR_TR2;		 // Falling edge trigger enabled
-	EXTI -> IMR |= EXTI_IMR_MR2;		 // Interrupt request from line 2 not masked
-	NVIC_SetPriority(EXTI2_IRQn, 0);	 // EXTI2 interrupt maximum priority
+	SYSCFG -> EXTICR[0] |= (0b0011 << 8);	// GPIOD_Pin_2 is the source input for EXTI internal interrupt
+	EXTI -> RTSR |= EXTI_RTSR_TR2;		 	// Rising edge trigger enabled
+	EXTI -> FTSR |= EXTI_FTSR_TR2;		 	// Falling edge trigger enabled
+	EXTI -> IMR |= EXTI_IMR_MR2;		 	// Interrupt request from line 2 not masked
+	NVIC_SetPriority(EXTI2_IRQn, 0);	 	// EXTI2 interrupt maximum priority
 
 	// Interrupt configuration for the measurement start
-	SYSCFG -> EXTICR[1] |= (0b0010 << 4);// GPIOC_Pin_5 is the source input for EXTI internal interrupt
-	EXTI -> RTSR |= EXTI_RTSR_TR5;		 // Rising edge trigger enabled
-	EXTI -> IMR |= EXTI_IMR_MR5;		 // Interrupt request from line 0 not masked
+	SYSCFG -> EXTICR[1] |= (0b0010 << 4);	// GPIOC_Pin_5 is the source input for EXTI internal interrupt
+	EXTI -> RTSR |= EXTI_RTSR_TR5;		 	// Rising edge trigger enabled
+	EXTI -> IMR |= EXTI_IMR_MR5;		 	// Interrupt request from line 0 not masked
 	NVIC_SetPriority(EXTI9_5_IRQn, 3);
 
-	NVIC_SetPriority(TIM5_IRQn, 1);		 // TIM5 interrupt priority=1
+	NVIC_SetPriority(TIM5_IRQn, 1);			// TIM5 interrupt priority=1
 
-	NVIC_SetPriority(USART2_IRQn, 1);	 // USART2 interrupt priority
-	NVIC_EnableIRQ(USART2_IRQn);		 // Enable interrupt from USART2
+	NVIC_SetPriority(USART2_IRQn, 1);	 	// USART2 interrupt priority
+	NVIC_EnableIRQ(USART2_IRQn);		 	// Enable interrupt from USART2
 
-	NVIC_SetPriority(ADC_IRQn, 3);		 // ADC1 interrupt priority
-	NVIC_EnableIRQ(ADC_IRQn);
+	NVIC_SetPriority(ADC_IRQn, 3);		 	// ADC1 interrupt priority
+	NVIC_EnableIRQ(ADC_IRQn);				// Enable interrupt from ADC1
 
-	NVIC_SetPriority(DMA2_Stream0_IRQn, 3);
-	NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+	NVIC_SetPriority(DMA2_Stream0_IRQn, 3);	// DMA2_Stream0 interrupt priority
+	NVIC_EnableIRQ(DMA2_Stream0_IRQn);		// Enable interrupt from DMA2_Stream0
 
 
 
@@ -523,7 +523,7 @@ void NVIC_init(void){
 }
 
 /*========================================================
- * 			 			  ADC_init
+ * ADC_init
  *========================================================
  * Function configures the ADC and its channels which are used to measure
  * the voltage drop on shunt resistors (output of the INA240PW op-amp).
@@ -584,7 +584,7 @@ void ADC_init(void){
 }
 
 /*========================================================
- * 			 			  USART_init
+ * USART_init
  *========================================================
  * UART interface configuration. USART2 is used by MCU.
  * Communication with the MCU is possible via USB cable connected
@@ -604,7 +604,7 @@ void USART_init(void){
 }
 
 /*========================================================
- * 			 			  DMA_init
+ * DMA_init
  *========================================================
  * Function configures DMA which is used to transfer data from
  * ADC1->DR to ADC_DMA_Values[] table. DMA works in direct circular mode
@@ -619,7 +619,7 @@ void USART_init(void){
  */
 void DMA_init(void){
 
-	DMA2_Stream0 -> CR &= ~DMA_SxCR_EN;
+	DMA2_Stream0 -> CR &= ~DMA_SxCR_EN;					// Disable DMA2_Stream0
 	while(DMA2_Stream0 -> CR & DMA_SxCR_EN);
 	DMA2_Stream0 -> PAR = (uint32_t)&ADC1->DR;			// Peripheral address
 	DMA2_Stream0 -> M0AR = (uint32_t)ADC_DMA_Values;	// Memory address
@@ -629,7 +629,7 @@ void DMA_init(void){
 	DMA2_Stream0 -> CR &= ~DMA_SxCR_CT;			// Mem0 selected
 	DMA2_Stream0 -> CR &= ~DMA_SxCR_CHSEL;		// Channel 0 (ADC1) selected
 	DMA2_Stream0 -> CR |= DMA_SxCR_PSIZE_0;		// Half-word peripheral data size
-	DMA2_Stream0 -> CR |= DMA_SxCR_MSIZE_0;		// Half-ord memory data size
+	DMA2_Stream0 -> CR |= DMA_SxCR_MSIZE_0;		// Half-word memory data size
 	DMA2_Stream0 -> CR |= DMA_SxCR_MINC;		// Memory address is incremented
 
 	DMA2_Stream0 -> FCR &= ~DMA_SxFCR_DMDIS;	// Direct mode enabled
@@ -644,15 +644,23 @@ void DMA_init(void){
 }
 
 
-
+/*========================================================
+ * IWDG_init
+ *========================================================
+ * Function configures Independent Watchdog. Its functionality is
+ * used in situation in which motor suddenly stops to spin
+ * because of some external force (e.g. blocking the propeller).
+ * IWDG is reseted in the same interrupt handler which inform the MCU about
+ * rotor's zero crossing so when the motor stops to spin no zero-crossing
+ * interrupts are generated, the MCU resets and the current through the
+ * motor ceases to flow.
+ *
+ * @param  None
+ * @retval None
+ */
 void WWDG_init(void){
-	WWDG->CFR |= 0b1111111; 		// Value to be compared with downcounter
-	WWDG -> CR |= 0b1111111;
-
-	WWDG -> CFR |= WWDG_CFR_WDGTB0;
-
-	IWDG -> RLR |= 0xFF;
-	IWDG -> PR |= 0;
+	IWDG -> RLR |= 0xFF;	// IWDG reload register
+	IWDG -> PR |= 0;		// Set the prescaler
 }
 
 
